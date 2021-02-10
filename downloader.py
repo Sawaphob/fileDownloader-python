@@ -58,6 +58,14 @@ def downloadSFTP(parse_url,filename,des_path):
         else:
             print(parse_url.path + ' File not found')
 
+def remove_temp_directory(filename):
+    directory = ".temp_"+filename
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    path = os.path.join(current_dir, directory) 
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    return path
+
 def basic_download(url,filename,destination_path):
     try:
         data = urllib2.urlopen(url)
@@ -65,11 +73,7 @@ def basic_download(url,filename,destination_path):
         print("ERROR occur: %s \nPlease check url (%s) and try again" % (str(e),url))
         return
     if data.info()['Content-Length'] is not None:
-        directory = ".temp_"+filename
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        path = os.path.join(current_dir, directory) 
-        if os.path.exists(path):
-            shutil.rmtree(path)
+        path = remove_temp_directory(filename)
         os.mkdir(path)
         full_path = path + '/' + filename
         content_size = int(data.info()['Content-Length'])
@@ -89,7 +93,7 @@ def basic_download(url,filename,destination_path):
         full_download(url,destination_path)
     print('Download ' + filename + ' completed.')
 
-def main_downloader(url):
+def main_downloader(url,destination):
     parse_url = urllib.parse.urlsplit(url)
     filename = os.path.basename(parse_url.path)
     scheme = parse_url.scheme
@@ -105,6 +109,8 @@ def main_downloader(url):
                 basic_download(url,filename,destination_path)
         except Exception as e:
             print("ERROR occur: %s \nPlease check url (%s) and try again" % (str(e),url))
+            remove_temp_directory(filename)
+
     else:
         print('Unsupport protocol (Application support only http,https,ftp and sftp')
 
