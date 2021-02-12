@@ -24,7 +24,7 @@ def fetch_store_content(resp, filename):
         with open(filename, 'ab') as f:
             f.writelines(content)
 
-# @retry(tries=3, delay=3, backoff=2)
+@retry(tries=3, delay=3, backoff=2)
 def partial_download(partial_download_input):
     url,index,start,end,path = partial_download_input
     filename = path + '_' + str(index)
@@ -33,7 +33,7 @@ def partial_download(partial_download_input):
     chunked_resp = urllib2.urlopen(req, timeout=15)
     fetch_store_content(chunked_resp, filename)
 
-# @retry(tries=3, delay=3, backoff=2)
+@retry(tries=3, delay=3, backoff=2)
 def full_download(url,path,filename):
     print('Starting full download '+filename)
     resp = urllib2.urlopen(url)
@@ -45,7 +45,7 @@ def concat_file(file,dest):
             with open(f,'rb') as fd:
                 shutil.copyfileobj(fd, wfd)
 
-# @retry(tries=3, delay=3, backoff=2)
+@retry(tries=3, delay=3, backoff=2)
 def downloadSFTP(parse_url,filename,des_path):
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
