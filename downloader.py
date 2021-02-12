@@ -24,7 +24,7 @@ def fetch_store_content(resp, filename):
         with open(filename, 'ab') as f:
             f.writelines(content)
 
-# @retry(tries=5, delay=3, backoff=2)
+# @retry(tries=3, delay=3, backoff=2)
 def partial_download(partial_download_input):
     url,index,start,end,path = partial_download_input
     filename = path + '_' + str(index)
@@ -33,9 +33,9 @@ def partial_download(partial_download_input):
     chunked_resp = urllib2.urlopen(req, timeout=15)
     fetch_store_content(chunked_resp, filename)
 
-# @retry(tries=5, delay=3, backoff=2)
-def full_download(url,path):
-    print('Starting full download')
+# @retry(tries=3, delay=3, backoff=2)
+def full_download(url,path,filename):
+    print('Starting full download '+filename)
     resp = urllib2.urlopen(url)
     fetch_store_content(resp, path)
 
@@ -45,7 +45,7 @@ def concat_file(file,dest):
             with open(f,'rb') as fd:
                 shutil.copyfileobj(fd, wfd)
 
-# @retry(tries=5, delay=3, backoff=2)
+# @retry(tries=3, delay=3, backoff=2)
 def downloadSFTP(parse_url,filename,des_path):
     cnopts = pysftp.CnOpts()
     cnopts.hostkeys = None
@@ -72,6 +72,11 @@ def basic_download(url,filename,destination_path):
     except Exception as e:
         print("ERROR occur: %s \nPlease check url (%s) and try again" % (str(e),url))
         return
+    if(url[:3]=='ftp'):
+        print('FTP support only full download')
+        full_download(url,destination_path,filename)
+        print('Download ' + filename + ' completed.')
+        return
     if data.info()['Content-Length'] is not None:
         try:
             path = remove_temp_directory(filename)
@@ -91,11 +96,12 @@ def basic_download(url,filename,destination_path):
             shutil.rmtree(path)
         except Exception as e:
             print('Cannot do patial download try full download')
-            full_download(url,destination_path)
+            full_download(url,destination_path,filename)
     else:
         print('Cannot get data content-length switch to full download')
-        full_download(url,destination_path)
+        full_download(url,destination_path,filename)
     print('Download ' + filename + ' completed.')
+    
 
 def main_downloader(input_downloader):
     url,destination = input_downloader
@@ -119,9 +125,9 @@ def main_downloader(input_downloader):
         print('Unsupport protocol (Application support only http,https,ftp and sftp')
 
 if __name__ == '__main__':
-    input_url = ['sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
-    # input_url = ['ftp://speedtest:speedtest@ftp.otenet.gr/test10Mb.db','https://az764295.vo.msecnd.net/stable/8490d3dde47c57ba65ec40dd192d014fd2113496/VSCode-darwin.zip','sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
-    destination = '/Users/sawaphob/Desktop/testDownloader'
+    # input_url = ['sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
+    input_url = ['ftp://speedtest:speedtest@ftp.otenet.gr/test10Mb.db','https://az764295.vo.msecnd.net/stable/8490d3dde47c57ba65ec40dd192d014fd2113496/VSCode-darwin.zip','sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
+    destination = '/Users/SawaphobChavana/Desktop/testDownloader'
     input_downloader = []
     for url in input_url:
         input_downloader.append((url,destination))
@@ -177,7 +183,7 @@ class TestFullDownload(unittest.TestCase):
         url = 'ftp://speedtest:speedtest@ftp.otenet.gr/test1Mb.db'
         req = urllib2.Request(url)
         resp = urllib2.urlopen(req, timeout=15)
-        full_download(url,'./test1Mb-ftp.db')
+        full_download(url,'./test1Mb-ftp.db','test1Mb-ftp.db')
         self.assertEqual(int(resp.info()['Content-Length']),os.stat('./test1Mb-ftp.db').st_size)
         test_material = open("test_material/test1Mb.db", "rb")
         actual_file = open("test1Mb-ftp.db", "rb")
@@ -189,7 +195,7 @@ class TestFullDownload(unittest.TestCase):
         url = 'http://speedtest.ftp.otenet.gr/files/test1Mb.db'
         req = urllib2.Request(url)
         resp = urllib2.urlopen(req, timeout=15)
-        full_download(url,'./test1Mb-http.db')
+        full_download(url,'./test1Mb-http.db','test1Mb-http.db')
         self.assertEqual(int(resp.info()['Content-Length']),os.stat('./test1Mb-http.db').st_size)
         test_material = open("test_material/test1Mb.db", "rb")
         actual_file = open("test1Mb-http.db", "rb")
@@ -223,14 +229,6 @@ class TestSFTPDownload(unittest.TestCase):
         
 class TestPartialDownload(unittest.TestCase):
 
-    def testfilesize_content_ftp(self):
-        url = 'ftp://speedtest:speedtest@ftp.otenet.gr/test1Mb.db'
-        test_input = (url,0,0,1023,'test1Mb.db-ftp')
-        partial_download(test_input)
-        self.assertTrue(os.path.exists('test1Mb.db-ftp_0'))
-        self.assertEqual(1024,os.stat('test1Mb.db-ftp_0').st_size)
-        os.remove('test1Mb.db-ftp_0')
-
     def testfilesize_content_http(self):
         url = 'http://speedtest.ftp.otenet.gr/files/test1Mb.db'
         test_input = (url,0,0,1023,'test1Mb.db-http')
@@ -255,7 +253,7 @@ class TestBasicDownload(unittest.TestCase):
         sys.stdout = capturedOutput   
         basic_download(url,'KeyGenerator.png','./KeyGenerator.png')                          
         sys.stdout = sys.__stdout__   
-        self.assertEqual('Cannot get data content-length switch to full download\nStarting full download\nDownload KeyGenerator.png completed.\n',capturedOutput.getvalue())
+        self.assertEqual('FTP support only full download\nStarting full download KeyGenerator.png\nDownload KeyGenerator.png completed.\n',capturedOutput.getvalue())
 
     def test_partial_download(self): 
         url = 'http://speedtest.ftp.otenet.gr/files/test1Mb.db'
@@ -273,7 +271,7 @@ class TestBasicDownload(unittest.TestCase):
 class TestMainDownload(unittest.TestCase):
     def test_not_support_scheme(self):
         url = 'ftps://demo:password@test.rebex.net/pub/example/KeyGenerator.png'
-        destination = './test'
+        destination = os.path.dirname(os.path.realpath(__file__))
         capturedOutput = io.StringIO()       
         sys.stdout = capturedOutput   
         main_downloader((url,destination))                          
@@ -281,22 +279,23 @@ class TestMainDownload(unittest.TestCase):
         self.assertEqual('Unsupport protocol (Application support only http,https,ftp and sftp\n',capturedOutput.getvalue())
     def test_sftp(self):
         url = 'sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png'
-        destination = './test'
+        destination = os.path.dirname(os.path.realpath(__file__))+'/'
         capturedOutput = io.StringIO()
         sys.stdout = capturedOutput   
         main_downloader((url,destination))                          
         sys.stdout = sys.__stdout__   
-        self.assertEqual('Unsupport protocol (Application support only http,https,ftp and sftp\n',capturedOutput.getvalue())
+        self.assertEqual('SFTP only support full download\nStart downloading KeyGenerator.png\nDownload KeyGenerator.png completed.\n',capturedOutput.getvalue())
+        os.remove(destination+"KeyGenerator.png")
     def test_basic(self):
         url = 'http://speedtest.ftp.otenet.gr/files/test1Mb.db'
-        destination = './test/'
+        destination = os.path.dirname(os.path.realpath(__file__))
         req = urllib2.Request(url)
         resp = urllib2.urlopen(req, timeout=15)
         main_downloader((url,destination))
-        self.assertEqual(int(resp.info()['Content-Length']),os.stat('./test/test1Mb.db').st_size)
+        self.assertEqual(int(resp.info()['Content-Length']),os.stat('test1Mb.db').st_size)
         test_material = open("test_material/test1Mb.db", "rb")
-        actual_file = open("./test/test1Mb.db", "rb")
+        actual_file = open("test1Mb.db", "rb")
         self.assertEqual(test_material.readlines(),actual_file.readlines())
         test_material.close()
         actual_file.close()
-        os.remove('./test/test1Mb-http.db')
+        os.remove('test1Mb.db')
