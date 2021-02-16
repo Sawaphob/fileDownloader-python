@@ -18,11 +18,15 @@ def fetch_store_content(resp, filename):
     if(os.path.exists(filename)):
         os.remove(filename)
     while True:
-        content = resp.readlines(1024)
-        if(content == []):
+        try:
+            content = resp.read(1024)
+            if(content == b''):
+                break
+            with open(filename, 'ab') as f:
+                f.write(content)
+        except Exception as e:
+            print(e)
             break
-        with open(filename, 'ab') as f:
-            f.writelines(content)
 
 @retry(tries=3, delay=3, backoff=2)
 def partial_download(partial_download_input):
@@ -33,7 +37,7 @@ def partial_download(partial_download_input):
     chunked_resp = urllib2.urlopen(req, timeout=15)
     fetch_store_content(chunked_resp, filename)
 
-@retry(tries=3, delay=3, backoff=2)
+# @retry(tries=3, delay=3, backoff=2)
 def full_download(url,path,filename):
     print('Starting full download '+filename)
     resp = urllib2.urlopen(url)
@@ -121,13 +125,17 @@ def main_downloader(input_downloader):
         except Exception as e:
             print("ERROR occur: %s \nPlease check url (%s) and try again" % (str(e),url))
             remove_temp_directory(filename)
+            if os.path.exists(destination_path):
+                os.remove(destination_path)
     else:
         print('Unsupport protocol (Application support only http,https,ftp and sftp')
 
 if __name__ == '__main__':
     # input_url = ['sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
-    input_url = ['ftp://speedtest:speedtest@ftp.otenet.gr/test10Mb.db','https://az764295.vo.msecnd.net/stable/8490d3dde47c57ba65ec40dd192d014fd2113496/VSCode-darwin.zip','sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
-    destination = '/Users/SawaphobChavana/Desktop/testDownloader'
+    input_url = sys.argv[1].strip().split(',')
+    destination = sys.argv[2]
+    # input_url = ['ftp://speedtest:speedtest@ftp.otenet.gr/test10Mb.db','https://az764295.vo.msecnd.net/stable/8490d3dde47c57ba65ec40dd192d014fd2113496/VSCode-darwin.zip','sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
+    # destination = '/Users/SawaphobChavana/Desktop/testDownloader'
     input_downloader = []
     for url in input_url:
         input_downloader.append((url,destination))
