@@ -131,19 +131,20 @@ def main_downloader(input_downloader):
         print('Unsupport protocol (Application support only http,https,ftp and sftp')
 
 if __name__ == '__main__':
-    # input_url = ['sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
-    input_url = sys.argv[1].strip().split(',')
-    destination = sys.argv[2]
+    input_url = ['ftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
+    # input_url = sys.argv[1].strip().split(',')
+    # destination = sys.argv[2]
     # input_url = ['ftp://speedtest:speedtest@ftp.otenet.gr/test10Mb.db','https://az764295.vo.msecnd.net/stable/8490d3dde47c57ba65ec40dd192d014fd2113496/VSCode-darwin.zip','sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
-    # destination = '/Users/SawaphobChavana/Desktop/testDownloader'
+    destination = '/Users/SawaphobChavana/Desktop/testDownloader'
     input_downloader = []
     for url in input_url:
         input_downloader.append((url,destination))
     if (not os.path.exists(destination)):
         os.mkdir(destination)
         print('Create new directory')
-    for _ in progress.bar(ThreadPool().imap_unordered(main_downloader, input_downloader),label='Overall download progress',expected_size=len(input_url)):
-        pass
+    # for _ in progress.bar(ThreadPool().imap_unordered(main_downloader, input_downloader),label='Overall download progress',expected_size=len(input_url)):
+    #     pass
+    main_downloader(input_downloader[0])
 
 
 import unittest
