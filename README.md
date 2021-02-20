@@ -20,17 +20,17 @@ Install all dependencies:
 pip install -r requirements.txt
 ```
 ## Usage
-Change the input_url and destination variable
-input_url: list of files url that you want to download
+input_url: string contain url and separated each url with ','
+
 destination: Full path to place the downloaded file
-Example:
-```python
-input_url = ['ftp://speedtest:speedtest@ftp.otenet.gr/test10Mb.db','sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png']
-destination = '/Users/SawaphobChavana/Desktop/testDownloader'
-```
-Then run:
+
 ```bash
-python downloader.py
+python downloader.py $input_url $destination
+```
+
+Example:
+```bash
+python3 downloader.py 'ftp://speedtest:speedtest@ftp.otenet.gr/test10Mb.db,https://az764295.vo.msecnd.net/stable/8490d3dde47c57ba65ec40dd192d014fd2113496/VSCode-darwin.zip,sftp://demo:password@test.rebex.net/pub/example/KeyGenerator.png' /Users/SawaphobChavana/Desktop/testDownloader 
 ```
 
 ## Testing
